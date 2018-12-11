@@ -1,0 +1,22 @@
+{
+  "name": "Sanus",
+  "version": "1.0.0",
+  "description": "Patients database for a clinic",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "repository": "https://github.com/electron/electron-quick-start",
+  "author": "Witold Szczerba",
+  "license": "CC0-1.0",
+  "devDependencies": {
+    "electron": "3.0.4"
+  },
+  "dependencies": {
+    "@cycle/dom": "22.0.0",
+    "@cycle/run": "5.1.0",
+    "ramda": "0.26.1",
+    "tachyons": "4.11.1",
+    "xstream": "11.7.0"
+  }
+}
