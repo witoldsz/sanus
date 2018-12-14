@@ -1,7 +1,7 @@
 const { h, makeDOMDriver } = require('@cycle/dom')
 const { run } = require('@cycle/run')
 const { dbDriver, filterDb } = require('./db')
-const { banner, table, searchForm, editForm } = require('./view-partials')
+const { banner, table, searchForm, editForm, debugStateView } = require('./view-partials')
 const xs = require('xstream').default
 const R = require('ramda')
 
@@ -88,10 +88,11 @@ function model(actions, initialDb$) {
       actions.changeLastVisit$.map(R.assocPath(['patient', 'lastVisit'])),
       actions.save$.map(() => state => {
         const p = state.patient
-        const idx = parseInt(p.id)
-        const patients = isNaN(idx)
-          ? R.append(p, state.patients)
-          : R.update(idx, p, state.patients)
+        const len = state.patients.length
+        const idx = parseInt(p.id) || len
+        const patients = idx < len
+          ? R.update(idx, p, state.patients)
+          : R.append({ ...p, id: idx.toString() }, state.patients)
         return { ...state, patient: undefined, patients, [hintSymbol]: 'PATIENTS_UPDATED' }
       })
     )
@@ -113,7 +114,7 @@ function view(state$) {
   return state$.map((state) => (
     h('div', [
       (state.patient ? editPage(state.patient) : searchPage(state)),
-      (DEBUG_STATE ? debugState(state) : ''),
+      (DEBUG_STATE ? debugStateView(state) : ''),
     ])
   ))
 
