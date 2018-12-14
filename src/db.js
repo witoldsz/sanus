@@ -11,7 +11,7 @@ exports.dbDriver = function(patients$) {
 
 function readDb() {
   console.log(path.relative('/', PATIENTS_FILE))
-  return parse(fs.readFileSync(PATIENTS_FILE, 'utf-8'))
+  return parse(fs.existsSync(PATIENTS_FILE) ? fs.readFileSync(PATIENTS_FILE, 'utf-8') : '[]')
 }
 
 function writeDb(db) {
