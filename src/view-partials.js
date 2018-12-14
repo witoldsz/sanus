@@ -10,25 +10,23 @@ exports.banner = function (title) {
 }
 
 exports.searchForm = function (searchTerm, noResults) {
-  return h('div.measure center', [
-    h('div.ba', [
-      h('input', {
-        attrs: { id: 'searchTerm' },
-        props: {
-          className: 'input-reset bn bg-white pa2 w-90',
-          value: searchTerm,
-          placeholder: 'enter last and first name or PESEL or last visit date'
-        },
-        hook: focusHook(),
-      }),
-      h('button', {
-        attrs: { id: 'searchTermClear' },
-        props: {
-          className: 'button-reset bn bg-white w-9 pointer'
-        }
-      }, ['⨯']),
+  return h('div.flex justify-center', [
+    h('div.w-100 measure', [
+      h('div.ba br--black relative', [
+        h('input#searchTerm.input-reset bn bg-white pa2 pr4 w-100 border-box', {
+          props: {
+            value: searchTerm,
+            placeholder: 'enter last and first name or PESEL or last visit date'
+          },
+          hook: focusHook(),
+        }),
+        h('button#searchTermClear.absolute right-0 pa2 button-reset bn bg-white pointer', ['⨯']),
+      ]),
+      h('small.red db pa2', { class: { 'o-0': !noResults } }, ['no results']),
     ]),
-    h('small.red db pa2', { class: { 'o-0': !noResults }}, ['no results'])
+    h('div', [
+      h('button#new-patient.button-reset b dim ba b--black br-pill br-black ml2 pa2 bg-white pointer', ['new patient'])
+    ]),
   ])
 }
 
@@ -92,6 +90,13 @@ exports.editForm = function (patient) {
       }),
     ])
   }
+}
+
+exports.debugStateView = function (state) {
+  return h('div', [
+    h('hr'),
+    h('pre', [ JSON.stringify(state, null, 2)]),
+  ])
 }
 
 function focusHook() {

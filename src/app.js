@@ -7,6 +7,7 @@ const R = require('ramda')
 
 const hintSymbol = Symbol('hint')
 const ESC_KEY = 27
+const DEBUG_STATE = false
 
 // bootstrap:
 
@@ -32,7 +33,7 @@ run(main, drivers)
 
 function intent(domSource) {
   return {
-    newPatient: click('button.new-patient'),
+    newPatient: click('button#new-patient'),
     editPatientIdx$: click('[data-action=edit]').map((ev) => parseInt(ev.target.dataset.id)),
     changeSearchTerm$: xs.merge(
       input('#searchTerm'),
@@ -112,8 +113,7 @@ function view(state$) {
   return state$.map((state) => (
     h('div', [
       (state.patient ? editPage(state.patient) : searchPage(state)),
-      h('hr'),
-      h('pre', [ JSON.stringify(state, null, 2)]),
+      (DEBUG_STATE ? debugState(state) : ''),
     ])
   ))
 
