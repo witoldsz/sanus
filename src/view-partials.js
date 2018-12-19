@@ -55,7 +55,7 @@ exports.table = function (patients) {
   function lnk(patient, prop) {
     return h('span', {
       props: { className: 'link hover-dark-blue pointer underline-hover' },
-      dataset: { id: patient.id, action: 'edit' }
+      dataset: { idx: `${patient.idx}`, action: 'edit' }
     }, [patient[prop]])
   }
 }

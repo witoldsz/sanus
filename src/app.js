@@ -1,6 +1,6 @@
 const { h, makeDOMDriver } = require('@cycle/dom')
 const { run } = require('@cycle/run')
-const { dbDriver, filterDb } = require('./db')
+const { dbDriver, filterPatients, updatePatients } = require('./db')
 const { banner, table, searchForm, editForm, debugStateView } = require('./view-partials')
 const xs = require('xstream').default
 const R = require('ramda')
@@ -14,11 +14,11 @@ const DEBUG_STATE = false
 function main(sources) {
   const initialDb$ = sources.db
   const actions = intent(sources.DOM)
-  const state$ = model(actions, initialDb$).debug('state$')
+  const { state$, updatedPatients$ } = model(actions, initialDb$)
 
   return {
     DOM: view(state$),
-    db: updateDb(state$),
+    db: updatedPatients$,
   }
 }
 
@@ -34,7 +34,7 @@ run(main, drivers)
 function intent(domSource) {
   return {
     newPatient: click('button#new-patient'),
-    editPatientIdx$: click('[data-action=edit]').map((ev) => parseInt(ev.target.dataset.id)),
+    editPatientIdx$: click('[data-action=edit]').map((ev) => parseInt(ev.target.dataset.idx)),
     changeSearchTerm$: xs.merge(
       input('#searchTerm'),
       esc('#searchTerm').mapTo(''),
@@ -46,7 +46,7 @@ function intent(domSource) {
     changePesel$: input('input.edit-pesel'),
     changeLastVisit$: input('input.edit-lastVisit'),
 
-    save$: click('button.save'),
+    save$: click('button.save', { preventDefault: true }),
     cancelPatient: xs.merge(
       click('button.cancel-patient', { preventDefault: true }),
       esc('form.edit'),
@@ -67,7 +67,7 @@ function intent(domSource) {
 }
 
 function model(actions, initialDb$) {
-  return initialDb$.map((patients) => {
+  const state$ = initialDb$.map((patients) => {
     const initialState = {
       [hintSymbol]: undefined,
       patient: undefined,
@@ -88,26 +88,32 @@ function model(actions, initialDb$) {
       actions.changeLastVisit$.map(R.assocPath(['patient', 'lastVisit'])),
       actions.save$.map(() => state => {
         const p = state.patient
-        const len = state.patients.length
-        const idx = parseInt(p.id) || len
-        const patients = idx < len
-          ? R.update(idx, p, state.patients)
-          : R.append({ ...p, id: idx.toString() }, state.patients)
-        return { ...state, patient: undefined, patients, [hintSymbol]: 'PATIENTS_UPDATED' }
+        if (!p.firstName || !p.lastName) {
+          return state
+        } else {
+          return {
+            ...state,
+            patient: undefined,
+            patients: updatePatients(state.patients, p),
+            [hintSymbol]: 'PATIENTS_UPDATED'
+          }
+        }
       })
-    )
-    .fold((state, reducer) => reducer(dropHint(state)), initialState)
+    ).fold((state, reducer) => reducer(dropHint(state)), initialState)
   }).flatten()
+
+  const updatedPatients$ = state$
+    .filter(R.propEq(hintSymbol, 'PATIENTS_UPDATED'))
+    .map(R.prop('patients'))
+
+  return {
+    state$,
+    updatedPatients$,
+  }
 
   function dropHint(state) {
     return { ...state, [hintSymbol]: undefined }
   }
-}
-
-function updateDb(state$) {
-  return state$
-    .filter(R.propEq(hintSymbol, 'PATIENTS_UPDATED'))
-    .map(R.prop('patients'))
 }
 
 function view(state$) {
@@ -119,7 +125,7 @@ function view(state$) {
   ))
 
   function searchPage({ searchTerm, patients }) {
-    const filtered = filterDb(patients, searchTerm)
+    const filtered = filterPatients(patients, searchTerm)
     const noResults = filtered.length === 0
     return h('div', [
       banner('Browse patients'),
