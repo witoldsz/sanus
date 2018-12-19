@@ -2,6 +2,7 @@ const { h, makeDOMDriver } = require('@cycle/dom')
 const { run } = require('@cycle/run')
 const { dbDriver, filterPatients, updatePatients } = require('./db')
 const { banner, table, searchForm, editForm, debugStateView } = require('./view-partials')
+const { i18n } = require('./i18n')
 const xs = require('xstream').default
 const R = require('ramda')
 
@@ -128,7 +129,7 @@ function view(state$) {
     const filtered = filterPatients(patients, searchTerm)
     const noResults = filtered.length === 0
     return h('div', [
-      banner('Browse patients'),
+      banner(i18n`Browse patients`),
       searchForm(searchTerm, noResults),
       noResults ? '' : table(filtered),
     ])
@@ -136,7 +137,7 @@ function view(state$) {
 
   function editPage(patient) {
     return h('div', [
-      banner('Edit'),
+      banner(i18n`Edit`),
       editForm(patient),
     ])
   }
