@@ -10,23 +10,26 @@ exports.banner = function (title) {
   ])
 }
 
-exports.searchForm = function (searchTerm, noResults) {
+exports.searchForm = function (searchTerm, resultsCount) {
   return h('div.flex justify-center', [
     h('div.w-100 measure', [
       h('div.ba br--black relative', [
-        h('input#searchTerm.input-reset bn bg-white pa2 pr4 w-100 border-box', {
+        h('input#searchTerm.input-reset bn bg-transparent pa2 pr4 w-100', {
           props: {
+            type: 'text',
             value: searchTerm,
             placeholder: i18n`enter last and first name or PESEL or last visit date`
           },
           hook: focusHook(),
         }),
-        h('button#searchTermClear.absolute right-0 pa2 button-reset bn bg-white pointer', ['⨯']),
+        h('button#searchTermClear.absolute right-0 pa2 button-reset bn bg-transparent pointer', ['⨯']),
       ]),
-      h('small.red db pa2', { class: { 'o-0': !noResults } }, [i18n`no results`]),
+      h('small.db pa2', { class: { 'red': resultsCount === 0 } },
+        resultsCount === 0 ? [i18n`no results`] : [i18n`records`, `: ${resultsCount}`]
+      ),
     ]),
     h('div', [
-      h('button#new-patient.button-reset b dim ba b--black br-pill br-black ml2 pa2 bg-white pointer', [
+      h('button#new-patient.button-reset b grow ba b--black br-pill br-black ml2 pa2 bg-transparent pointer', [
         i18n`new patient`
       ])
     ]),
@@ -36,16 +39,16 @@ exports.searchForm = function (searchTerm, noResults) {
 exports.table = function (patients) {
   return h('div.pa4', [
     h('div.overflow-auto', [
-      h('table', { props: { className: 'w-100 mw8 center' }, attrs: { cellspacing: '0' } }, [
+      h('table', { props: { className: 'w-100 mw8 center' }, attrs: { cellspacing: '0' }}, [
         h('thead', [
           h('tr', [
-            h('th.fw6 bb b--black-20 tl pb3 pr3 bg-white', [i18n`Last name`]),
-            h('th.fw6 bb b--black-20 tl pb3 pr3 bg-white', [i18n`First name`]),
-            h('th.fw6 bb b--black-20 tl pb3 pr3 bg-white', [i18n`PESEL`]),
-            h('th.fw6 bb b--black-20 tl pb3 pr3 bg-white', [i18n`Last visit`]),
+            h('th.fw6 bb b--black-20 tl pb3 pr3 bg-transparent', [i18n`Last name`]),
+            h('th.fw6 bb b--black-20 tl pb3 pr3 bg-transparent', [i18n`First name`]),
+            h('th.fw6 bb b--black-20 tl pb3 pr3 bg-transparent', [i18n`PESEL`]),
+            h('th.fw6 bb b--black-20 tl pb3 pr3 bg-transparent', [i18n`Last visit`]),
           ])
         ]),
-        h('tbody.lh-copy', patients.map((patient) => h('tr', [
+        h('tbody.lh-copy', patients.map((patient) => h('tr', { key: patient.idx }, [
           h('td.pv3 pr3 bb b--black-20', [lnk(patient, 'lastName')]),
           h('td.pv3 pr3 bb b--black-20', [lnk(patient, 'firstName')]),
           h('td.pv3 pr3 bb b--black-20', [lnk(patient, 'pesel')]),
@@ -64,31 +67,58 @@ exports.table = function (patients) {
 }
 
 exports.editForm = function (patient) {
+  const saveable = !patient.$invalid || patient.$invalid && patient.$invalidIgnored
   return h('form.edit measure center black-80', [
     h('fieldset.ba b--transparent ph0 mh0', [
-      field(i18n`Last name`, 'edit-last', patient.lastName, true),
-      field(i18n`First name`, 'edit-first', patient.firstName),
-      field(i18n`PESEL`, 'edit-pesel', patient.pesel),
-      field(i18n`Last visit`, 'edit-lastVisit', patient.lastVisit),
+      field(i18n`Last name`, undefined, 'edit-last', 'lastName', true),
+      field(i18n`First name`, undefined, 'edit-first', 'firstName'),
+      field(i18n`PESEL`, i18n`PESEL is invalid`, 'edit-pesel', 'pesel'),
 
       h('div.mt3', [
-        h('button.save b ph3 pv2 input-reset ba b--dark-green dark-green bg-washed-green grow pointer',
-          { attrs: { type: 'submit' } },
+        h('label.db fw4 lh-copy', [i18n`Last visit`, ' ', h('small', [i18n`year-month-day`])]),
+        h('div.relative ba b--light-silver', [
+          h(`input#edit-lastVisit.pa2 input-reset bn bg-transparent w-100`, {
+            props: { type: 'text', value: patient.lastVisit },
+          }),
+          h('button#today-lastVisit.absolute right-0 top-0 pa2 button-reset pointer bn bg-transparent', {
+            props: { type: 'button' }
+          }, [i18n`today`]),
+        ]),
+      ]),
+
+      h('div.mt3', [
+        h('button#save.b ph3 pv2 input-reset ba b--dark-green dark-green bg-washed-green grow pointer',
+          {
+            class: {
+              'bg-washed-green': saveable,
+              'bg-washed-red': !saveable,
+            },
+            props: { type: 'submit' }
+          },
           [i18n`save`]
         ),
-        h('button.cancel-patient ml3 b ph3 pv2 input-reset ba b--light-silver bg-transparent grow pointer',
-          { attrs: { type: 'button' } },
+        h('button#overrideInvalid.ml2 bn bg-transparent pointer grow',
+          {
+            class: { 'dn': !patient.$invalid || patient.$invalidIgnored },
+            props: { type: 'button' }},
+          ['✔ ', i18n`ignore invalid form`]
+        ),
+        h('button#cancel-patient.fr ml3 b ph3 pv2 input-reset ba b--light-silver bg-transparent grow pointer',
+          { props: { type: 'button' }},
           [i18n`cancel`]
         ),
       ]),
     ])
   ])
 
-  function field(label, action, value, focus = false) {
+  function field(label, errorLabel, action, valueKey, focus = false) {
+    const hasError = patient.$errors && patient.$errors[valueKey]
     return h('div.mt3', [
-      h('label.db fw4 lh-copy', [label]),
-      h(`input.${action} pa2 input-reset ba b--light-silver bg-transparent w-100 measure`, {
-        props: { value },
+      hasError
+        ? h('label.db fw4 lh-copy red', [errorLabel])
+        : h('label.db fw4 lh-copy', [label]),
+      h(`input#${action}.pa2 input-reset ba b--light-silver bg-transparent w-100`, {
+        props: { type: 'text', value: patient[valueKey] },
         hook: focus ? focusHook() : undefined,
       }),
     ])

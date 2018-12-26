@@ -13,6 +13,9 @@ const translations = {
   'no results': {
     pl: 'brak wyników'
   },
+  'records': {
+    pl: 'rekordów'
+  },
   'Browse patients': {
     pl: 'Przeglądaj listę pacjentów'
   },
@@ -31,6 +34,9 @@ const translations = {
   'PESEL': {
     pl: 'PESEL'
   },
+  'PESEL is invalid': {
+    pl: 'PESEL jest nieprawidłowy'
+  },
   'Last visit': {
     pl: 'Ost. wizyta'
   },
@@ -42,5 +48,14 @@ const translations = {
   },
   'cancel': {
     pl: 'anuluj'
+  },
+  'today': {
+    pl: 'dziś'
+  },
+  'year-month-day': {
+    pl: 'rok-mies-dzień'
+  },
+  'ignore invalid form': {
+    pl: 'ignoruj błędy formularza'
   }
 }

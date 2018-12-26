@@ -23,17 +23,19 @@ exports.dbDriver = function(patients$) {
  * @param ps patients
  * @param term filtering term/search string
  */
-exports.filterPatients = function(ps, term) {
+exports.filterAndSortPatients = function(ps, term) {
+  let filtered
   if (!term) {
-    return ps
+    filtered = [...ps]
   } else if (term[0] >= '0' && term[0] <= '9') {
-    return ps.filter(({ pesel, lastVisit }) => pesel.startsWith(term) || lastVisit.startsWith(term))
+    filtered = ps.filter(({ pesel, lastVisit }) => pesel.startsWith(term) || lastVisit.startsWith(term))
   } else {
     const termsLowerCase = term.trim().toLocaleLowerCase()
-    return ps.filter(({ lastName, firstName }) =>
+    filtered = ps.filter(({ lastName, firstName }) =>
       `${lastName} ${firstName}`.toLocaleLowerCase().startsWith(termsLowerCase)
     )
   }
+  return filtered.sort(({ updatedTs: t1 }, { updatedTs: t2 }) => t1 > t2 ? -1 : t1 < t2 ? 1 : 0)
 }
 
 /**
@@ -48,7 +50,7 @@ exports.updatePatients = function(ps, p) {
 }
 
 function serialize(db) {
-  const rows = db.map((o) => [o.lastName, o.firstName, o.pesel, o.lastVisit])
+  const rows = db.map((o) => [o.lastName, o.firstName, o.pesel, o.lastVisit, o.updatedTs])
   return JSON.stringify(rows).replace(/\],/g, '],\n')
 }
 
@@ -59,5 +61,6 @@ function parse(fileContent) {
     firstName: arr[1],
     pesel: arr[2],
     lastVisit: arr[3],
+    updatedTs: arr[4] || '',
   }))
 }

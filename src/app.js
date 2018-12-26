@@ -1,10 +1,11 @@
 const { h, makeDOMDriver } = require('@cycle/dom')
 const { run } = require('@cycle/run')
-const { dbDriver, filterPatients, updatePatients } = require('./db')
+const { dbDriver, filterAndSortPatients, updatePatients } = require('./db')
 const { banner, table, searchForm, editForm, debugStateView } = require('./view-partials')
 const { i18n } = require('./i18n')
 const xs = require('xstream').default
 const R = require('ramda')
+const isPeselValid = require('pesel-check')
 
 const hintSymbol = Symbol('hint')
 const ESC_KEY = 27
@@ -15,7 +16,7 @@ const DEBUG_STATE = false
 function main(sources) {
   const initialDb$ = sources.db
   const actions = intent(sources.DOM)
-  const { state$, updatedPatients$ } = model(actions, initialDb$)
+  const { state$, updatedPatients$ } = model(actions, initialDb$, sources.now)
 
   return {
     DOM: view(state$),
@@ -26,6 +27,7 @@ function main(sources) {
 const drivers = {
   DOM: makeDOMDriver('#app'),
   db: dbDriver,
+  now: (/* no sinks */) => () => new Date(),
 }
 
 run(main, drivers)
@@ -42,14 +44,16 @@ function intent(domSource) {
       click('#searchTermClear').mapTo(''),
     ),
 
-    changeFirst$: input('input.edit-first'),
-    changeLast$: input('input.edit-last'),
-    changePesel$: input('input.edit-pesel'),
-    changeLastVisit$: input('input.edit-lastVisit'),
+    changeFirst$: input('input#edit-first'),
+    changeLast$: input('input#edit-last'),
+    changePesel$: input('input#edit-pesel'),
+    changeLastVisit$: input('input#edit-lastVisit'),
+    todayLastVisit$: click('button#today-lastVisit'),
 
-    save$: click('button.save', { preventDefault: true }),
+    save$: click('button#save', { preventDefault: true }),
+    overrideInvalid$: click('button#overrideInvalid', { preventDefault: true }),
     cancelPatient: xs.merge(
-      click('button.cancel-patient', { preventDefault: true }),
+      click('button#cancel-patient', { preventDefault: true }),
       esc('form.edit'),
     ),
   }
@@ -67,7 +71,7 @@ function intent(domSource) {
   }
 }
 
-function model(actions, initialDb$) {
+function model(actions, initialDb$, now) {
   const state$ = initialDb$.map((patients) => {
     const initialState = {
       [hintSymbol]: undefined,
@@ -86,16 +90,25 @@ function model(actions, initialDb$) {
       actions.changeFirst$.map(R.assocPath(['patient', 'firstName'])),
       actions.changeLast$.map(R.assocPath(['patient', 'lastName'])),
       actions.changePesel$.map(R.assocPath(['patient', 'pesel'])),
-      actions.changeLastVisit$.map(R.assocPath(['patient', 'lastVisit'])),
+      xs.merge(
+        actions.changeLastVisit$,
+        actions.todayLastVisit$.map(now).map(d => d.toISOString().substr(0, 10)),
+      ).map(R.assocPath(['patient', 'lastVisit'])),
+      actions.overrideInvalid$.map(() => R.assocPath(['patient', '$invalidIgnored'], true)),
       actions.save$.map(() => state => {
-        const p = state.patient
+        const p = validatePatient(state.patient)
         if (!p.firstName || !p.lastName) {
           return state
+        } else if (p.$invalid && !p.$invalidIgnored) {
+          return {
+            ...state,
+            patient: p,
+          }
         } else {
           return {
             ...state,
             patient: undefined,
-            patients: updatePatients(state.patients, p),
+            patients: updatePatients(state.patients, { ...unvalidate(p), updatedTs: now().toISOString() }),
             [hintSymbol]: 'PATIENTS_UPDATED'
           }
         }
@@ -126,12 +139,12 @@ function view(state$) {
   ))
 
   function searchPage({ searchTerm, patients }) {
-    const filtered = filterPatients(patients, searchTerm)
-    const noResults = filtered.length === 0
+    const filtered = filterAndSortPatients(patients, searchTerm)
+    const resultsCount = filtered.length
     return h('div', [
       banner(i18n`Browse patients`),
-      searchForm(searchTerm, noResults),
-      noResults ? '' : table(filtered),
+      searchForm(searchTerm, resultsCount),
+      resultsCount === 0 ? '' : table(filtered),
     ])
   }
 
@@ -141,4 +154,23 @@ function view(state$) {
       editForm(patient),
     ])
   }
+}
+
+function validatePatient(p) {
+  const $errors = {
+    pesel: !isPeselValid(p.pesel),
+  }
+  return {
+    ...p,
+    $errors,
+    $invalid: Object.entries($errors).filter(([_, val]) => val).length > 0,
+  }
+}
+
+function unvalidate(validated) {
+  const a = { ...validated }
+  delete a.$errors
+  delete a.$invalid
+  delete a.$invalidIgnored
+  return a
 }
