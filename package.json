@@ -1,5 +1,5 @@
 {
-  "name": "Sanus",
+  "name": "sanus",
   "version": "1.0.0",
   "description": "Patients database for a clinic",
   "main": "src/main.js",
