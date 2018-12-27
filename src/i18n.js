@@ -40,9 +40,6 @@ const translations = {
   'PESEL': {
     pl: 'PESEL'
   },
-  'PESEL is invalid': {
-    pl: 'PESEL jest nieprawidłowy'
-  },
   'Last visit': {
     pl: 'Ost. wizyta'
   },
@@ -60,6 +57,12 @@ const translations = {
   },
   'year-month-day': {
     pl: 'rok-mies-dzień'
+  },
+  'invalid': {
+    pl: 'nieprawidłowy'
+  },
+  'invalid date format': {
+    pl: 'nieprawidłowa data'
   },
   'ignore invalid form': {
     pl: 'ignoruj błędy formularza'

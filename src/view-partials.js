@@ -1,5 +1,6 @@
 const { h } = require('@cycle/dom')
 const { i18n } = require('./i18n')
+const R = require('ramda')
 
 const MAX_ITEMS = 200
 
@@ -78,21 +79,10 @@ exports.editForm = function (patient) {
   const saveable = !patient.$invalid || patient.$invalid && patient.$invalidIgnored
   return h('form.edit measure center black-80', [
     h('fieldset.ba b--transparent ph0 mh0', [
-      field(i18n`Last name`, undefined, 'edit-last', 'lastName', true),
-      field(i18n`First name`, undefined, 'edit-first', 'firstName'),
-      field(i18n`PESEL`, i18n`PESEL is invalid`, 'edit-pesel', 'pesel'),
-
-      h('div.mt3', [
-        h('label.db fw4 lh-copy', [i18n`Last visit`, ' ', h('small', [i18n`year-month-day`])]),
-        h('div.relative ba b--light-silver', [
-          h(`input#edit-lastVisit.pa2 input-reset bn bg-transparent w-100`, {
-            props: { type: 'text', placeholder: '____-__-__', value: patient.lastVisit },
-          }),
-          h('button#today-lastVisit.absolute right-0 top-0 pa2 button-reset pointer bn bg-transparent', {
-            props: { type: 'button' }
-          }, [i18n`today`]),
-        ]),
-      ]),
+      field(i18n`Last name`, 'edit-last', 'lastName', true),
+      field(i18n`First name`, 'edit-first', 'firstName'),
+      field(i18n`PESEL`, 'edit-pesel', 'pesel'),
+      lastVisitField(),
 
       h('div.mt3', [
         h('button#save.b ph3 pv2 input-reset ba b--dark-green dark-green bg-washed-green grow pointer',
@@ -120,13 +110,35 @@ exports.editForm = function (patient) {
     ])
   ])
 
-  function field(label, errorLabel, action, valueKey, focus = false) {
+  function lastVisitField() {
+    const hasError = R.path(['$errors', 'lastVisit'], patient)
+    return h('div.mt3', [
+      h('label.db fw4 lh-copy', [
+        i18n`Last visit`,
+        ' ',
+        h('small', [i18n`year-month-day`]),
+        hasError ? h('span.red', [' ', i18n`invalid date format`]) : '',
+      ]),
+      h('div.relative ba', { class: { 'b--red': hasError, 'b--light-silver': !hasError } }, [
+        h(`input#edit-lastVisit.pa2 input-reset bn bg-transparent w-100`, {
+          props: { type: 'text', placeholder: '____-__-__', value: patient.lastVisit },
+        }),
+        h('button#today-lastVisit.absolute right-0 top-0 pa2 button-reset pointer bn bg-transparent', {
+          props: { type: 'button' }
+        }, [i18n`today`]),
+      ]),
+    ])
+  }
+
+  function field(label, action, valueKey, focus = false) {
     const hasError = patient.$errors && patient.$errors[valueKey]
     return h('div.mt3', [
-      hasError
-        ? h('label.db fw4 lh-copy red', [errorLabel])
-        : h('label.db fw4 lh-copy', [label]),
-      h(`input#${action}.pa2 input-reset ba b--light-silver bg-transparent w-100`, {
+      h('label.db fw4 lh-copy', [
+        label,
+        hasError ? h('span.red', [' ', i18n`invalid`]) : '',
+      ]),
+      h(`input#${action}.pa2 input-reset ba bg-transparent w-100`, {
+        class: { 'b--red': hasError, 'b--light-silver': !hasError },
         props: { type: 'text', value: patient[valueKey] },
         hook: focus ? focusHook() : undefined,
       }),

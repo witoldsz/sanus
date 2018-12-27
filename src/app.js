@@ -9,6 +9,7 @@ const isPeselValid = require('pesel-check')
 const moment = require('moment')
 
 const hintSymbol = Symbol('hint')
+const DATE_FORMAT = 'YYYY-MM-DD'
 const ESC_KEY = 27
 const DEBUG_STATE = false
 
@@ -93,7 +94,7 @@ function model(actions, initialDb$, now) {
       actions.changePesel$.map(R.assocPath(['patient', 'pesel'])),
       xs.merge(
         actions.changeLastVisit$,
-        actions.todayLastVisit$.map(now).map(m => m.format('YYYY-MM-DD')),
+        actions.todayLastVisit$.map(now).map(m => m.format(DATE_FORMAT)),
       ).map(R.assocPath(['patient', 'lastVisit'])),
       actions.overrideInvalid$.map(() => R.assocPath(['patient', '$invalidIgnored'], true)),
       actions.save$.map(() => state => {
@@ -159,7 +160,8 @@ function view(state$) {
 
 function validatePatient(p) {
   const $errors = {
-    pesel: !isPeselValid(p.pesel),
+    pesel: p.pesel && !isPeselValid(p.pesel),
+    lastVisit: p.lastVisit && !moment(p.lastVisit, DATE_FORMAT, /*strict*/true).isValid(),
   }
   return {
     ...p,
