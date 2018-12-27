@@ -86,7 +86,7 @@ exports.editForm = function (patient) {
         h('label.db fw4 lh-copy', [i18n`Last visit`, ' ', h('small', [i18n`year-month-day`])]),
         h('div.relative ba b--light-silver', [
           h(`input#edit-lastVisit.pa2 input-reset bn bg-transparent w-100`, {
-            props: { type: 'text', value: patient.lastVisit },
+            props: { type: 'text', placeholder: '____-__-__', value: patient.lastVisit },
           }),
           h('button#today-lastVisit.absolute right-0 top-0 pa2 button-reset pointer bn bg-transparent', {
             props: { type: 'button' }

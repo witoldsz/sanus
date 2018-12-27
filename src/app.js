@@ -6,6 +6,7 @@ const { i18n } = require('./i18n')
 const xs = require('xstream').default
 const R = require('ramda')
 const isPeselValid = require('pesel-check')
+const moment = require('moment')
 
 const hintSymbol = Symbol('hint')
 const ESC_KEY = 27
@@ -27,7 +28,7 @@ function main(sources) {
 const drivers = {
   DOM: makeDOMDriver('#app'),
   db: dbDriver,
-  now: (/* no sinks */) => () => new Date(),
+  now: (/* no sinks */) => () => moment(),
 }
 
 run(main, drivers)
@@ -92,7 +93,7 @@ function model(actions, initialDb$, now) {
       actions.changePesel$.map(R.assocPath(['patient', 'pesel'])),
       xs.merge(
         actions.changeLastVisit$,
-        actions.todayLastVisit$.map(now).map(d => d.toISOString().substr(0, 10)),
+        actions.todayLastVisit$.map(now).map(m => m.format('YYYY-MM-DD')),
       ).map(R.assocPath(['patient', 'lastVisit'])),
       actions.overrideInvalid$.map(() => R.assocPath(['patient', '$invalidIgnored'], true)),
       actions.save$.map(() => state => {
