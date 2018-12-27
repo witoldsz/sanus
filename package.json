@@ -4,7 +4,8 @@
   "description": "Patients database for a clinic",
   "main": "src/main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "start-lang=pl": "electron . lang=pl"
   },
   "repository": "https://github.com/electron/electron-quick-start",
   "author": "Witold Szczerba",

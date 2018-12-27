@@ -1,9 +1,12 @@
 const { pathOr } = require('ramda')
+const electron = require('electron')
 
-const lang = 'en' // TODO: detect or let user set and persist
+const argv = electron.remote.process.argv // ['_app', 'path', 'lang=X']
+
+const lang = argv.filter((e) => e.startsWith('lang=')).map(e => e.replace('lang=', ''))[0]
 
 exports.i18n = function([key]) {
-  return lang === 'en' ? key : pathOr(key, [key, lang], translations)
+  return pathOr(key, [key, lang], translations)
 }
 
 const translations = {
