@@ -16,6 +16,12 @@ const translations = {
   'records': {
     pl: 'rekordów'
   },
+  'showing first': {
+    pl: 'pokazuję pierwsze'
+  },
+  'Table sorted by most recent edit.': {
+    pl: 'Tabela sortowana wg daty edycji.'
+  },
   'Browse patients': {
     pl: 'Przeglądaj listę pacjentów'
   },
