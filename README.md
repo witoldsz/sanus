@@ -1,3 +1,11 @@
+### update 2019-01-31
+
+Database migration: 12k+ records have been added, works fine.
+
+### update 2018-12-29
+
+The application has been deployed to production.
+
 # sanus
 Cycle.js and Electron feat. patients database for a clinic
 
